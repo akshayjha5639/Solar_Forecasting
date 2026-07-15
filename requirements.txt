@@ -1,0 +1,28 @@
+# Solar Generation Forecasting -- Python 3.10+
+# install: pip install -r requirements.txt
+
+# core data stack
+pandas>=2.1
+numpy>=1.26
+pyarrow>=14.0          # parquet read/write
+openpyxl>=3.1          # only needed if reading xlsx files
+
+# solar physics
+pvlib>=0.10.3
+
+# data fetching
+requests>=2.31
+
+# plotting / evaluation
+matplotlib>=3.8
+
+# Phase 3 (XGBoost models)
+xgboost>=2.0
+scikit-learn>=1.3
+optuna>=3.4            # hyperparameter tuning (optional)
+
+# Phase 4 (deep learning: LSTM + Temporal Fusion Transformer)
+# uncomment when you reach Phase 4 -- heavy installs
+# torch>=2.1
+# pytorch-lightning>=2.1
+# pytorch-forecasting>=1.0
