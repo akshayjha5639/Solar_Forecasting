@@ -128,6 +128,13 @@ with tab_overview:
             "XGBoost (Phase 3) will combine both signals.")
 
 # ---------------------------------------------------------------- explorer --
+import os
+
+@st.cache_data
+def load_xgb(horizon: str) -> pd.DataFrame | None:
+    p = f"output/xgb_test_predictions_{horizon}.parquet"
+    return pd.read_parquet(p) if os.path.exists(p) else None
+
 with tab_explorer:
     c1, c2, c3 = st.columns([2, 2, 3])
     day = c1.date_input("Date", value=pd.Timestamp("2023-03-08").date(),
@@ -139,11 +146,37 @@ with tab_explorer:
                                     ("Physics (PVLib)",
                                      "Smart persistence (24h)")
                                     if m in models])
+
+    xgb_available = [h for h in ("15min", "1h", "24h")
+                     if load_xgb(h) is not None]
+    xgb_pick = None
+    if xgb_available:
+        xgb_pick = st.selectbox(
+            "Overlay XGBoost forecast (Phase 3, test-year 2023 only)",
+            ["(none)"] + xgb_available)
+        if xgb_pick == "(none)":
+            xgb_pick = None
+
     n = {"1 day": 1, "3 days": 3, "7 days": 7}[span]
     start = pd.Timestamp(day, tz=df.index.tz)
     wk = df.loc[start:start + pd.Timedelta(days=n)]
 
     fig = go.Figure()
+    if xgb_pick:
+        xp = load_xgb(xgb_pick).loc[start:start + pd.Timedelta(days=n)]
+        if len(xp):
+            fig.add_scatter(x=xp.index, y=xp["p90"], line=dict(width=0),
+                            showlegend=False, hoverinfo="skip")
+            fig.add_scatter(x=xp.index, y=xp["p10"], fill="tonexty",
+                            fillcolor="rgba(243,156,18,0.25)",
+                            line=dict(width=0),
+                            name=f"XGB {xgb_pick} P10-P90")
+            fig.add_scatter(x=xp.index, y=xp["p50"],
+                            line=dict(color="#e67e22", width=2),
+                            name=f"XGB {xgb_pick} P50")
+        else:
+            st.caption("XGBoost predictions cover 2023 only -- "
+                       "pick a 2023 date to see them.")
     fig.add_scatter(x=wk.index, y=wk["gen_kw"], name="Actual",
                     line=dict(color="black", width=2))
     for m in shown:

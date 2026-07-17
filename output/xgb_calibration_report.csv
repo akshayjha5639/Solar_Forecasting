@@ -1,0 +1,4 @@
+horizon,q_hat_kW,coverage_after_%,mean_band_width_%cap
+15min,0.009,77.4,10.5
+1h,0.008,75.99,14.5
+24h,0.008,77.39,15.9
