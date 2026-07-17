@@ -154,9 +154,11 @@ with tab_new:
         fig2 = go.Figure(go.Bar(x=daily.index.strftime("%a %d %b"),
                                 y=daily.values, marker_color="#f39c12",
                                 text=[f"₹{v*tariff:,.0f}" for v in daily],
-                                textposition="outside"))
-        fig2.update_layout(height=320, yaxis_title="kWh / day",
-                           title="7-day energy & revenue")
+                                textposition="outside", cliponaxis=False))
+        fig2.update_layout(height=340, yaxis_title="kWh / day",
+                           title="7-day energy & revenue",
+                           yaxis_range=[0, float(daily.max()) * 1.30],
+                           margin=dict(t=60))
         st.plotly_chart(fig2, use_container_width=True)
         st.info("This site is now on the **physics engine**. Once live "
                 "generation data connects, the ML models take over and "
@@ -198,6 +200,16 @@ with tab_ml:
                "size is a scaling parameter, not a model input.")
 
     hor = st.radio("Horizon", ["24h", "1h", "15min"], horizontal=True)
+
+    # theme-aware colours (black lines vanish in dark mode)
+    try:
+        dark = st.context.theme.type == "dark"
+    except Exception:
+        dark = True          # safe default: colours below work on dark too
+    col_actual = "#FAFAFA" if dark else "#111111"
+    col_ml = "#4dabf7" if dark else "#1c6dd0"
+    col_band = "rgba(77,171,247,.35)" if dark else "rgba(41,128,185,.25)"
+
     t = preds[hor]
     start = pd.Timestamp(day, tz=t.index.tz)
     d = t.loc[start:start + pd.Timedelta(days=1)]
@@ -209,13 +221,13 @@ with tab_ml:
     fig.add_scatter(x=d.index, y=d["p90"]*scale, line=dict(width=0),
                     showlegend=False, hoverinfo="skip")
     fig.add_scatter(x=d.index, y=d["p10"]*scale, fill="tonexty",
-                    fillcolor="rgba(52,152,219,.25)", line=dict(width=0),
+                    fillcolor=col_band, line=dict(width=0),
                     name="P10–P90 (calibrated 80% band)")
     fig.add_scatter(x=d.index, y=d["p50"]*scale,
-                    line=dict(color="#2980b9", width=2),
+                    line=dict(color=col_ml, width=2.5),
                     name=f"ML forecast ({hor} ahead)")
     fig.add_scatter(x=d.index, y=d["gen_kw"]*scale,
-                    line=dict(color="black", width=2), name="Actual")
+                    line=dict(color=col_actual, width=2), name="Actual")
     fig.update_layout(height=400, yaxis_title="kW",
                       legend=dict(orientation="h", y=1.12))
     st.plotly_chart(fig, use_container_width=True)
